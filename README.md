@@ -1,9 +1,10 @@
 # virtualenvwrapper.el
 
+[![Build Status](https://travis-ci.org/porterjamesj/virtualenvwrapper.el.svg?branch=master)](https://travis-ci.org/porterjamesj/virtualenvwrapper.el)
+
 A featureful virtualenv mode for Emacs. Emulates
 much of the functionality of Doug Hellmann's
-[virtualenvwrapper](https://bitbucket.org/dhellmann/virtualenvwrapper/)
-for Emacs.
+[virtualenvwrapper](https://bitbucket.org/dhellmann/virtualenvwrapper/).
 
 ## Features
 
@@ -39,10 +40,12 @@ for Emacs.
 * If you have your virtualenvs spread around the filesystem rather
   than in one directory, just set venv-location to be a list of
   paths to each virtualenv. For example:
+
   ```lisp
   (setq venv-location '("/path/to/project1-env/"
                         "/path/to/ptoject2-env/"))
   ```
+
   Notice that the final directory of each path has a different name.
   The mode uses this fact to disambiguate virtualenvs from each other,
   so for now it is required.
@@ -107,7 +110,7 @@ interested to see how robust it is.
 
 ### Eshell
 
-Support for eshell is turned on by calling `venv-initialize-eshell`.
+support for eshell is turned on by calling `venv-initialize-eshell`.
 After doing this, any new eshells you launch will be in the correct
 virtualenv and have access to installed executables, etc. The mode
 also provides a variety of virtualenvwrapper commands that work
@@ -165,8 +168,8 @@ noninteracively as `(venv-rmvirtualenv "name")`.
 
 #### `venv-lsvirtualenv`
 
-Display all available virtualenvs in a help buffer. If you want to get use this
-noninteractively, use `(venv-list-virtualenvs)`.
+Display all available virtualenvs in a help buffer. Also callable
+noninteractively as `(venv-list-virtualenvs)`.
 
 #### `venv-cdvirtualenv`
 
@@ -234,19 +237,33 @@ by Emacs. How to do some of them are described below.
 This mode doesn't provide any. I don't presume to know how you want
 your keybindings, you can bind them to whatever you want! Go crazy!
 
-### Advising
+### Hooks
 
-Virtualenvwrapper lets you write shell scripts that run as hooks after you
-take certain actions, such as creating or deleting a virtualenv. This mode
-doesn't provide something similar, because emacs itself already does in the
-form of
-[advice](https://www.gnu.org/software/emacs/manual/html_node/elisp/Advising-Functions.html). For example, you could advise the mkvirtualenv function to install
-commonly used tools when a new virtualenv is created:
+Virtualenvwrapper lets you write shell scripts that run as hooks after
+you take certain actions, such as creating or deleting a
+virtualenv. This package provides Emacs
+[hooks](https://www.gnu.org/software/emacs/manual/html_node/emacs/Hooks.html),
+to achieve the same thing. The complete list of hooks is:
+
+```
+venv-premkvirtualenv-hook
+venv-postmkvirtualenv-hook
+venv-prermvirtualenv-hook
+venv-postrmvirtualenv-hook
+venv-preactivate-hook
+venv-postactivate-hook
+venv-predeactivate-hook
+venv-postdeactivate-hook
+```
+
+each of which is run when you would expect based on the name.
+
+For example, to install commonly used packages when a new virtualenv is
+created you could modify the `venv-postmkvirtualenv-hook` as follows:
 
 ```lisp
-(defadvice venv-mkvirtualenv (after install-common-tools)
-    "Install commonly used packages in new virtualenvs."
-    (shell-command "pip install flake8 nose jedi"))
+(add-hook 'venv-postmkvirtualenv-hook
+          (lambda () (shell-command "pip install nose flake8 jedi")))
 ```
 
 ### Automatically activating a virtualenv in a particular project
@@ -274,10 +291,11 @@ automatically, we can just add a python-mode hook:
 ```lisp
 (add-hook 'python-mode-hook (lambda ()
                               (hack-local-variables)
-                              (venv-workon project-venv-name)))
+                              (when (boundp 'project-venv-name)
+                                (venv-workon project-venv-name))))
 ```
 
-The call to `hack-local-variables` is necessary beacuse by default
+The call to `hack-local-variables` is necessary because by default
 mode-hooks are run before directory local variables are set, so we
 have to do that explicitly in the hook in order to have access to
 them.
@@ -318,6 +336,23 @@ More about customizing the eshell prompt
 
 Open an issue or a PR! I'm happy to pull in contributions or take
 suggestions for improvements.
+
+### Hacking
+
+I use [Cask](http://cask.github.io/) to manage dependacies and
+[ert-runner](https://github.com/rejeep/ert-runner.el) for testing. To
+get started:
+
+1. [install cask](http://cask.github.io/installation/)
+2. Install dependacies with `cask install --dev`
+3. Verify that the tests pass with `cask exec ert-runner`
+
+The tests are pretty rudimentary integration tests but they verify that
+all the basic functionality works.
+
+If you're planning on submitting a PR, please make sure that the tests pass
+before you do so. Thanks!
+
 
 ### License
 
